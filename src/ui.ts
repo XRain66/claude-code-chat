@@ -321,6 +321,46 @@ const html = `<!DOCTYPE html>
 					</div>
 				</div>
 
+				<h3 style="margin-top: 24px; margin-bottom: 16px; font-size: 14px; font-weight: 600;">Transparent Proxy</h3>
+				<div>
+					<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0;">
+						Configure transparent proxy for Claude Code network requests. The proxy will automatically handle all HTTP/HTTPS traffic.
+					</p>
+				</div>
+				<div class="settings-group">
+					<div style="margin-bottom: 12px;">
+						<input type="checkbox" id="proxy-enabled" onchange="updateSettings(); toggleProxySettings();">
+						<label for="proxy-enabled">Enable Transparent Proxy</label>
+					</div>
+					
+					<div id="proxySettings" style="display: none;">
+						<div style="margin-bottom: 12px;">
+							<label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--vscode-descriptionForeground);">Proxy Server</label>
+							<input type="text" id="proxy-server" class="file-search-input" style="width: 100%;" placeholder="127.0.0.1:7890 or http://proxy.example.com:8080" onchange="updateSettings()">
+							<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 4px 0 0 0;">
+								Proxy server address. Can include protocol (http/https/socks) or just host:port.
+							</p>
+						</div>
+						
+						<div style="margin-bottom: 12px;">
+							<input type="checkbox" id="proxy-auth-enabled" onchange="updateSettings(); toggleProxyAuth();">
+							<label for="proxy-auth-enabled">Proxy requires authentication</label>
+						</div>
+						
+						<div id="proxyAuthSettings" style="display: none;">
+							<div style="margin-bottom: 12px;">
+								<label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--vscode-descriptionForeground);">Username</label>
+								<input type="text" id="proxy-auth-username" class="file-search-input" style="width: 100%;" placeholder="proxy username" onchange="updateSettings()">
+							</div>
+							
+							<div style="margin-bottom: 12px;">
+								<label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--vscode-descriptionForeground);">Password</label>
+								<input type="password" id="proxy-auth-password" class="file-search-input" style="width: 100%;" placeholder="proxy password" onchange="updateSettings()">
+							</div>
+						</div>
+					</div>
+				</div>
+
 				<h3 style="margin-top: 24px; margin-bottom: 16px; font-size: 14px; font-weight: 600;">Permissions</h3>
 				<div>
 					<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0;">
@@ -3376,6 +3416,11 @@ const html = `<!DOCTYPE html>
 			const apiBaseUrl = document.getElementById('api-base-url').value;
 			const apiKey = document.getElementById('api-key').value;
 			const yoloMode = document.getElementById('yolo-mode').checked;
+			const proxyEnabled = document.getElementById('proxy-enabled').checked;
+			const proxyServer = document.getElementById('proxy-server').value;
+			const proxyAuthEnabled = document.getElementById('proxy-auth-enabled').checked;
+			const proxyUsername = document.getElementById('proxy-auth-username').value;
+			const proxyPassword = document.getElementById('proxy-auth-password').value;
 
 			// Update WSL options visibility
 			document.getElementById('wslOptions').style.display = wslEnabled ? 'block' : 'none';
@@ -3390,7 +3435,12 @@ const html = `<!DOCTYPE html>
 					'wsl.claudePath': wslClaudePath || '/usr/local/bin/claude',
 					'api.baseUrl': apiBaseUrl || '',
 					'api.key': apiKey || '',
-					'permissions.yoloMode': yoloMode
+					'permissions.yoloMode': yoloMode,
+					'proxy.enabled': proxyEnabled,
+					'proxy.server': proxyServer || '',
+					'proxy.auth.enabled': proxyAuthEnabled,
+					'proxy.auth.username': proxyUsername || '',
+					'proxy.auth.password': proxyPassword || ''
 				}
 			});
 		}
@@ -3487,6 +3537,18 @@ const html = `<!DOCTYPE html>
 				commandInput.value = '';
 				hintDiv.textContent = 'This will allow all ' + toolSelect.value + ' commands without asking for permission.';
 			}
+		}
+
+		function toggleProxySettings() {
+			const proxyEnabled = document.getElementById('proxy-enabled').checked;
+			const proxySettings = document.getElementById('proxySettings');
+			proxySettings.style.display = proxyEnabled ? 'block' : 'none';
+		}
+
+		function toggleProxyAuth() {
+			const proxyAuthEnabled = document.getElementById('proxy-auth-enabled').checked;
+			const proxyAuthSettings = document.getElementById('proxyAuthSettings');
+			proxyAuthSettings.style.display = proxyAuthEnabled ? 'block' : 'none';
 		}
 		
 		function addPermission() {
@@ -3601,6 +3663,17 @@ const html = `<!DOCTYPE html>
 				document.getElementById('api-base-url').value = message.data['api.baseUrl'] || '';
 				document.getElementById('api-key').value = message.data['api.key'] || '';
 				document.getElementById('yolo-mode').checked = message.data['permissions.yoloMode'] || false;
+				
+				// Update proxy settings
+				document.getElementById('proxy-enabled').checked = message.data['proxy.enabled'] || false;
+				document.getElementById('proxy-server').value = message.data['proxy.server'] || '';
+				document.getElementById('proxy-auth-enabled').checked = message.data['proxy.auth.enabled'] || false;
+				document.getElementById('proxy-auth-username').value = message.data['proxy.auth.username'] || '';
+				document.getElementById('proxy-auth-password').value = message.data['proxy.auth.password'] || '';
+				
+				// Update proxy settings visibility
+				toggleProxySettings();
+				toggleProxyAuth();
 				
 				// Update yolo warning visibility
 				updateYoloWarning();

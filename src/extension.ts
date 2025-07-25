@@ -450,6 +450,11 @@ class ClaudeChatProvider {
 		const yoloMode = config.get<boolean>('permissions.yoloMode', false);
 		const apiBaseUrl = config.get<string>('api.baseUrl', '');
 		const apiKey = config.get<string>('api.key', '');
+		const proxyEnabled = config.get<boolean>('proxy.enabled', false);
+		const proxyServer = config.get<string>('proxy.server', '');
+		const proxyAuthEnabled = config.get<boolean>('proxy.auth.enabled', false);
+		const proxyUsername = config.get<string>('proxy.auth.username', '');
+		const proxyPassword = config.get<string>('proxy.auth.password', '');
 		
 		if (yoloMode) {
 			// Yolo mode: skip all permissions regardless of MCP config
@@ -499,6 +504,35 @@ class ClaudeChatProvider {
 		if (apiKey) {
 			envVars.ANTHROPIC_API_KEY = apiKey;
 			envVars.ANTHROPIC_AUTH_TOKEN = apiKey;
+		}
+
+		// Add transparent proxy configuration if enabled
+		if (proxyEnabled && proxyServer) {
+			// Parse proxy server URL and set up transparent proxy environment variables
+			let proxyUrl = proxyServer;
+			
+			// Add protocol if not specified (default to http)
+			if (!proxyUrl.startsWith('http://') && !proxyUrl.startsWith('https://') && !proxyUrl.startsWith('socks://')) {
+				proxyUrl = `http://${proxyUrl}`;
+			}
+
+			// Add authentication if enabled
+			if (proxyAuthEnabled && proxyUsername) {
+				const url = new URL(proxyUrl);
+				url.username = proxyUsername;
+				if (proxyPassword) {
+					url.password = proxyPassword;
+				}
+				proxyUrl = url.toString();
+			}
+
+			// Set transparent proxy environment variables
+			envVars.HTTP_PROXY = proxyUrl;
+			envVars.HTTPS_PROXY = proxyUrl;
+			envVars.http_proxy = proxyUrl;
+			envVars.https_proxy = proxyUrl;
+			
+			console.log(`Using transparent proxy: ${proxyServer}`);
 		}
 
 		// Check if we're already running inside WSL
@@ -2087,7 +2121,12 @@ class ClaudeChatProvider {
 			'wsl.claudePath': config.get<string>('wsl.claudePath', '/usr/local/bin/claude'),
 			'permissions.yoloMode': config.get<boolean>('permissions.yoloMode', false),
 			'api.baseUrl': config.get<string>('api.baseUrl', ''),
-			'api.key': config.get<string>('api.key', '')
+			'api.key': config.get<string>('api.key', ''),
+			'proxy.enabled': config.get<boolean>('proxy.enabled', false),
+			'proxy.server': config.get<string>('proxy.server', ''),
+			'proxy.auth.enabled': config.get<boolean>('proxy.auth.enabled', false),
+			'proxy.auth.username': config.get<string>('proxy.auth.username', ''),
+			'proxy.auth.password': config.get<string>('proxy.auth.password', '')
 		};
 
 		this._postMessage({

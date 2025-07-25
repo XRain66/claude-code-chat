@@ -2,7 +2,7 @@
   "name": "claude-code-chat",
   "displayName": "Claude Code Chat",
   "description": "Beautiful Claude Code Chat Interface for VS Code",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "AndrePimenta",
   "author": "Andre Pimenta",
   "repository": {
@@ -195,6 +195,31 @@
           "type": "string",
           "default": "",
           "description": "Anthropic API key for authentication. This will be used for both ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN environment variables."
+        },
+        "claudeCodeChat.proxy.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable transparent proxy for Claude Code network requests"
+        },
+        "claudeCodeChat.proxy.server": {
+          "type": "string",
+          "default": "",
+          "description": "Transparent proxy server address (e.g., 127.0.0.1:7890 or http://proxy.example.com:8080)"
+        },
+        "claudeCodeChat.proxy.auth.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable proxy authentication (if required by your proxy server)"
+        },
+        "claudeCodeChat.proxy.auth.username": {
+          "type": "string",
+          "default": "",
+          "description": "Proxy authentication username"
+        },
+        "claudeCodeChat.proxy.auth.password": {
+          "type": "string",
+          "default": "",
+          "description": "Proxy authentication password"
         }
       }
     }
