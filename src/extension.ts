@@ -448,6 +448,8 @@ class ClaudeChatProvider {
 		// Get configuration
 		const config = vscode.workspace.getConfiguration('claudeCodeChat');
 		const yoloMode = config.get<boolean>('permissions.yoloMode', false);
+		const apiBaseUrl = config.get<string>('api.baseUrl', '');
+		const apiKey = config.get<string>('api.key', '');
 		
 		if (yoloMode) {
 			// Yolo mode: skip all permissions regardless of MCP config
@@ -483,19 +485,44 @@ class ClaudeChatProvider {
 
 		let claudeProcess: cp.ChildProcess;
 
-		if (wslEnabled) {
-			// Use WSL with bash -ic for proper environment loading
-			console.log('Using WSL configuration:', { wslDistro, nodePath, claudePath });
+		// Prepare environment variables
+		const envVars: { [key: string]: string | undefined } = {
+			...process.env,
+			FORCE_COLOR: '0',
+			NO_COLOR: '1'
+		};
+
+		// Add Anthropic API configuration if provided
+		if (apiBaseUrl) {
+			envVars.ANTHROPIC_BASE_URL = apiBaseUrl;
+		}
+		if (apiKey) {
+			envVars.ANTHROPIC_API_KEY = apiKey;
+			envVars.ANTHROPIC_AUTH_TOKEN = apiKey;
+		}
+
+		// Check if we're already running inside WSL
+		const isRunningInWSL = process.env.WSL_DISTRO_NAME || process.env.WSL_INTEROP;
+		
+		if (wslEnabled && !isRunningInWSL) {
+			// Use WSL with bash -ic for proper environment loading (only when running from Windows)
+			console.log('Using WSL configuration from Windows:', { wslDistro, nodePath, claudePath });
 			const wslCommand = `"${nodePath}" --no-warnings --enable-source-maps "${claudePath}" ${args.join(' ')}`;
+			console.log('WSL command to execute:', wslCommand);
 
 			claudeProcess = cp.spawn('wsl', ['-d', wslDistro, 'bash', '-ic', wslCommand], {
 				cwd: cwd,
 				stdio: ['pipe', 'pipe', 'pipe'],
-				env: {
-					...process.env,
-					FORCE_COLOR: '0',
-					NO_COLOR: '1'
-				}
+				shell: false,  // Explicitly set shell to false for WSL
+				env: envVars
+			});
+		} else if (wslEnabled && isRunningInWSL) {
+			// We're already inside WSL, use the configured paths directly
+			console.log('Already running in WSL, using direct command:', { nodePath, claudePath });
+			claudeProcess = cp.spawn(nodePath, ['--no-warnings', '--enable-source-maps', claudePath, ...args], {
+				cwd: cwd,
+				stdio: ['pipe', 'pipe', 'pipe'],
+				env: envVars
 			});
 		} else {
 			// Use native claude command
@@ -504,11 +531,7 @@ class ClaudeChatProvider {
 				shell: process.platform === 'win32',
 				cwd: cwd,
 				stdio: ['pipe', 'pipe', 'pipe'],
-				env: {
-					...process.env,
-					FORCE_COLOR: '0',
-					NO_COLOR: '1'
-				}
+				env: envVars
 			});
 		}
 
@@ -574,6 +597,8 @@ class ClaudeChatProvider {
 
 		claudeProcess.on('error', (error) => {
 			console.log('Claude process error:', error.message);
+			console.log('WSL Configuration:', { wslEnabled, wslDistro, nodePath, claudePath });
+			console.log('Command args:', args);
 			
 			// Clear process reference
 			this._currentClaudeProcess = undefined;
@@ -582,8 +607,21 @@ class ClaudeChatProvider {
 				type: 'clearLoading'
 			});
 			
-			// Check if claude command is not installed
-			if (error.message.includes('ENOENT') || error.message.includes('command not found')) {
+			// Check if claude command is not installed or WSL command failed
+			if (error.message.includes('ENOENT')) {
+				if (wslEnabled) {
+					// For WSL, provide more specific error message
+					this._sendAndSaveMessage({
+						type: 'error',
+						data: `WSL Error: Cannot find WSL or the specified distribution '${wslDistro}'. Please check your WSL configuration and ensure the distribution name is correct.`
+					});
+				} else {
+					this._sendAndSaveMessage({
+						type: 'error',
+						data: 'Install claude code first: https://www.anthropic.com/claude-code'
+					});
+				}
+			} else if (error.message.includes('command not found')) {
 				this._sendAndSaveMessage({
 					type: 'error',
 					data: 'Install claude code first: https://www.anthropic.com/claude-code'
@@ -2033,7 +2071,9 @@ class ClaudeChatProvider {
 			'wsl.distro': config.get<string>('wsl.distro', 'Ubuntu'),
 			'wsl.nodePath': config.get<string>('wsl.nodePath', '/usr/bin/node'),
 			'wsl.claudePath': config.get<string>('wsl.claudePath', '/usr/local/bin/claude'),
-			'permissions.yoloMode': config.get<boolean>('permissions.yoloMode', false)
+			'permissions.yoloMode': config.get<boolean>('permissions.yoloMode', false),
+			'api.baseUrl': config.get<string>('api.baseUrl', ''),
+			'api.key': config.get<string>('api.key', '')
 		};
 
 		this._postMessage({

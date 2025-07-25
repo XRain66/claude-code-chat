@@ -297,6 +297,30 @@ const html = `<!DOCTYPE html>
 					</div>
 				</div>
 
+				<h3 style="margin-top: 24px; margin-bottom: 16px; font-size: 14px; font-weight: 600;">API Configuration</h3>
+				<div>
+					<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0;">
+						Configure custom Anthropic API settings. Leave empty to use default Claude Code configuration.
+					</p>
+				</div>
+				<div class="settings-group">
+					<div style="margin-bottom: 12px;">
+						<label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--vscode-descriptionForeground);">Base URL (Optional)</label>
+						<input type="text" id="api-base-url" class="file-search-input" style="width: 100%;" placeholder="https://api.anthropic.com" onchange="updateSettings()">
+						<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 4px 0 0 0;">
+							Custom API endpoint URL. Leave empty to use default Anthropic API.
+						</p>
+					</div>
+					
+					<div style="margin-bottom: 12px;">
+						<label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--vscode-descriptionForeground);">API Key</label>
+						<input type="password" id="api-key" class="file-search-input" style="width: 100%;" placeholder="Enter your API key" onchange="updateSettings()">
+						<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 4px 0 0 0;">
+							Your Anthropic API key. This will be used for both ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN.
+						</p>
+					</div>
+				</div>
+
 				<h3 style="margin-top: 24px; margin-bottom: 16px; font-size: 14px; font-weight: 600;">Permissions</h3>
 				<div>
 					<p style="font-size: 11px; color: var(--vscode-descriptionForeground); margin: 0;">
@@ -3349,6 +3373,8 @@ const html = `<!DOCTYPE html>
 			const wslDistro = document.getElementById('wsl-distro').value;
 			const wslNodePath = document.getElementById('wsl-node-path').value;
 			const wslClaudePath = document.getElementById('wsl-claude-path').value;
+			const apiBaseUrl = document.getElementById('api-base-url').value;
+			const apiKey = document.getElementById('api-key').value;
 			const yoloMode = document.getElementById('yolo-mode').checked;
 
 			// Update WSL options visibility
@@ -3362,6 +3388,8 @@ const html = `<!DOCTYPE html>
 					'wsl.distro': wslDistro || 'Ubuntu',
 					'wsl.nodePath': wslNodePath || '/usr/bin/node',
 					'wsl.claudePath': wslClaudePath || '/usr/local/bin/claude',
+					'api.baseUrl': apiBaseUrl || '',
+					'api.key': apiKey || '',
 					'permissions.yoloMode': yoloMode
 				}
 			});
@@ -3570,6 +3598,8 @@ const html = `<!DOCTYPE html>
 				document.getElementById('wsl-distro').value = message.data['wsl.distro'] || 'Ubuntu';
 				document.getElementById('wsl-node-path').value = message.data['wsl.nodePath'] || '/usr/bin/node';
 				document.getElementById('wsl-claude-path').value = message.data['wsl.claudePath'] || '/usr/local/bin/claude';
+				document.getElementById('api-base-url').value = message.data['api.baseUrl'] || '';
+				document.getElementById('api-key').value = message.data['api.key'] || '';
 				document.getElementById('yolo-mode').checked = message.data['permissions.yoloMode'] || false;
 				
 				// Update yolo warning visibility
