@@ -200,12 +200,16 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run prebuild && npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "sync-version": "node scripts/sync-version.js",
+    "prebuild": "node scripts/prebuild.js",
+    "version": "npm run sync-version && git add -A",
+    "postversion": "git push && git push --tags"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
